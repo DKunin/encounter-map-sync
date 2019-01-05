@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Demo</title>
+</head>
+<body>
+<div id="container">
+</div>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/vue/1.0.26/vue.min.js" type="text/javascript"></script>
+<!--[starx websocket library](https://github.com/lonnng/nano-client-websocket)-->
+<script src="protocol.js" type="text/javascript"></script>
+<script src="starx-wsclient.js" type="text/javascript"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/konva/2.6.0/konva.min.js"></script>
+<script>
+
+const template = `
+    <div>
+        <div id="container"></div>
+        <h2 class="is-size-5">Saved Encounters</h2>
+    </div>
+`;
+
+const party = {
+    data() {
+        return {
+            name: ''
+        };
+    },
+    template,
+    methods: {
+        loadEncounter(name) {
+            this.name = name;
+            this.initMap();
+        },
+        initMap() {
+            
+        }
+    },
+    mounted() {
+    }
+};
+
+var width = 1024;
+var height = 1024;
+
+var stage = new Konva.Stage({
+    container: 'container',
+    width: width,
+    height: height
+});
+
+let encounter = {};
+
+var layer = new Konva.Layer();
+stage.add(layer);
+
+function createMonster(monster) {
+    const x = monster.x || monster.sortOrder * 30 + 20;
+    const y = monster.y || monster.sortOrder * 30 + 20;
+
+    var group = new Konva.Group({
+        x,
+        y,
+        draggable: monster.isPartyMember
+    });
+
+    var shape = new Konva.Circle({
+        width: 30,
+        height: 30,
+        fill: monster.isPartyMember ? 'green': 'red',
+    });
+    var boundingBox = shape.getClientRect({ relativeTo: group });
+
+    group.id = monster.id;
+    group.add(shape);
+    var mainText = new Konva.Text({
+        x: boundingBox.x + 40,
+        y: boundingBox.y,
+        text: `${monster.name}\n`
+    });
+  group.add(mainText);
+    
+
+    return group;
+}
+
+layer.draw();
+
+layer.on('dragend', function(e) {
+    var target = e.target;
+    starx.notify('room.message', {id: target.id, x: String(target.attrs.x), y: String(target.attrs.y)});
+});
+
+
+
+var onMessage = function (msg) {
+    layer.removeChildren();
+
+    Object.keys(encounter).map(singleKey => {
+        if (encounter[singleKey].id === msg.id) {
+            encounter[singleKey].x = parseInt(msg.x);
+            encounter[singleKey].y = parseInt(msg.y);
+
+        }
+        if (encounter[singleKey].currentlyVisible || encounter[singleKey].isPartyMember) {
+            layer.add(createMonster(encounter[singleKey]));
+        }
+    });
+
+    layer.draw();
+};
+
+var join = function (data) {
+    if(data.code === 0) {
+        starx.on('onMessage', onMessage)
+    }
+};
+
+
+var onNewUser = function (data) {
+    const parsedData = JSON.parse(data.encounter);
+    if (parsedData.type === 'dm') {
+        layer.removeChildren();
+        encounter = parsedData.encounter;
+        Object.keys(encounter).map(singleKey => {
+            if (encounter[singleKey].currentlyVisible || encounter[singleKey].isPartyMember) {
+                layer.add(createMonster(encounter[singleKey]));
+            }
+        });
+        const canvas = document.querySelector('canvas');
+        canvas.style.backgroundImage = 'url("' + parsedData.map + '")';
+        canvas.style.backgroundSize = 'contain';
+        layer.draw();
+    }
+};
+
+// var onMembers = function (data) {
+//     console.log(data);
+//     v.messages.push({name:'system', content: "members: "+data.members});
+// };
+
+starx.init({host: '127.0.0.1', port: 3250, path: '/nano'}, function () {
+    console.log("initialized");
+    starx.on("onNewUser", onNewUser);
+    // starx.on("onMembers", onMembers);
+    starx.request("room.join", { type: 'party' }, join);
+})
+
+</script>
+</body>
+</html>
