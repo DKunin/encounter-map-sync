@@ -74,12 +74,18 @@ function createMonster(monster) {
 
     group.id = monster.id;
     group.add(shape);
+
+
     var mainText = new Konva.Text({
         x: boundingBox.x + 40,
         y: boundingBox.y,
+        stroke: 'white',
+        strokeWidth: 0.6,
+        strokeScaleEnabled: true,
         text: `${monster.name}\n`
     });
-  group.add(mainText);
+
+    group.add(mainText);
     
 
     return group;
@@ -96,15 +102,16 @@ layer.on('dragend', function(e) {
 
 var onMessage = function (msg) {
     layer.removeChildren();
-
-    Object.keys(encounter).map(singleKey => {
-        if (encounter[singleKey].id === msg.id) {
-            encounter[singleKey].x = parseInt(msg.x);
-            encounter[singleKey].y = parseInt(msg.y);
-
+    console.log(msg)
+    Object.keys(encounter.monsters).map(singleKey => {
+        if (encounter.monsters[singleKey].id === msg.id) {
+            encounter.monsters[singleKey].x = parseInt(msg.x);
+            encounter.monsters[singleKey].y = parseInt(msg.y);
+            encounter.monsters[singleKey].currentlyVisible = msg.isCurrentlyVisible === 'true' ? true : false;
         }
-        if (encounter[singleKey].currentlyVisible || encounter[singleKey].isPartyMember) {
-            layer.add(createMonster(encounter[singleKey]));
+
+        if (encounter.monsters[singleKey].currentlyVisible || encounter.monsters[singleKey].isPartyMember) {
+            layer.add(createMonster(encounter.monsters[singleKey]));
         }
     });
 
@@ -123,13 +130,13 @@ var onNewUser = function (data) {
     if (parsedData.type === 'dm') {
         layer.removeChildren();
         encounter = parsedData.encounter;
-        Object.keys(encounter).map(singleKey => {
-            if (encounter[singleKey].currentlyVisible || encounter[singleKey].isPartyMember) {
-                layer.add(createMonster(encounter[singleKey]));
+        Object.keys(encounter.monsters).map(singleKey => {
+            if (encounter.monsters[singleKey].currentlyVisible || encounter.monsters[singleKey].isPartyMember) {
+                layer.add(createMonster(encounter.monsters[singleKey]));
             }
         });
         const canvas = document.querySelector('canvas');
-        canvas.style.backgroundImage = 'url("' + parsedData.map + '")';
+        canvas.style.backgroundImage = 'url("' + parsedData.encounter.settings.mapImage + '")';
         canvas.style.backgroundSize = 'contain';
         layer.draw();
     }

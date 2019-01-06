@@ -27,19 +27,20 @@ type (
 
 	// UserMessage represents a message that user sent
 	UserMessage struct {
-		X    string `json:"x"`
-		Y    string `json:"y"`
-		Id    string `json:"id"`
+		X                  string `json:"x"`
+		Y                  string `json:"y"`
+		Id                 string `json:"id"`
+		IsCurrentlyVisible string `json:"isCurrentlyVisible"`
 	}
 
 	// NewUser message will be received when new user join room
 	NewUser struct {
-		Content string `json:"content"`
+		Content       string `json:"content"`
 		EncounterData string `json:"encounter"`
 	}
 
 	TypeDeclaration struct {
-		Type string `json:"type"`
+		Type      string `json:"type"`
 		Encounter string `json:"encounter"`
 	}
 
@@ -80,8 +81,8 @@ func (stats *stats) AfterInit() {
 }
 
 const (
-	RoomId = 1
-	roomIDKey  = "ROOM_ID"
+	RoomId    = 1
+	roomIDKey = "ROOM_ID"
 )
 
 func NewRoomManager() *RoomManager {
@@ -117,8 +118,6 @@ func (mgr *RoomManager) Join(s *session.Session, msg []byte) error {
 		}
 		mgr.rooms[RoomId] = room
 	}
-	data := TypeDeclaration{}
-
 	fakeUID := s.ID() //just use s.ID as uid !!!
 	s.Bind(fakeUID)   // binding session uids.Set(roomIDKey, room)
 	s.Set(roomIDKey, room)
