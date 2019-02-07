@@ -64,10 +64,14 @@ function createMonster(monster) {
         y,
         draggable: monster.isPartyMember
     });
+    let size = 30;
 
+    if (monster.comment && monster.comment.includes('LARGE')) {
+        size = size * 3;
+    }
     var shape = new Konva.Circle({
-        width: 30,
-        height: 30,
+        width: size,
+        height: size,
         fill: monster.isPartyMember ? 'green': 'red',
     });
     var boundingBox = shape.getClientRect({ relativeTo: group });
@@ -80,8 +84,9 @@ function createMonster(monster) {
         x: boundingBox.x + 40,
         y: boundingBox.y,
 
-        // stroke: 'white',
-        // strokeWidth: 0.6,
+        stroke: 'white',
+        strokeWidth: 0.6,
+        // color: 'white',
         strokeScaleEnabled: true,
         text: `${monster.name}\n`
     });
@@ -148,7 +153,7 @@ var onNewUser = function (data) {
 //     v.messages.push({name:'system', content: "members: "+data.members});
 // };
 
-starx.init({host: '10.10.10.76', port: 3250, path: '/nano'}, function () {
+starx.init({host: '10.10.10.98', port: 3250, path: '/nano'}, function () {
     console.log("initialized");
     starx.on("onNewUser", onNewUser);
     // starx.on("onMembers", onMembers);
