@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/boltdb/bolt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/lonng/nano"
@@ -61,6 +63,11 @@ type (
 		outboundBytes int
 		inboundBytes  int
 	}
+
+	Server struct {
+		db    *bolt.DB
+	}
+
 )
 
 func (stats *stats) outbound(s *session.Session, msg nano.Message) error {
@@ -75,8 +82,8 @@ func (stats *stats) inbound(s *session.Session, msg nano.Message) error {
 
 func (stats *stats) AfterInit() {
 	stats.timer = nano.NewTimer(time.Minute, func() {
-		println("OutboundBytes", stats.outboundBytes)
-		println("InboundBytes", stats.outboundBytes)
+		//println("OutboundBytes", stats.outboundBytes)
+		//println("InboundBytes", stats.outboundBytes)
 	})
 }
 
@@ -138,10 +145,54 @@ func (mgr *RoomManager) Message(s *session.Session, msg *UserMessage) error {
 	return room.group.Broadcast("onMessage", msg)
 }
 
+func SettingsHandler() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" {
+			err := r.ParseForm()
+			if err != nil {
+				w.WriteHeader(500)
+				log.Printf("error with form %s", err)
+				return
+			}
+
+			Server.db.Update(func(tx *bolt.Tx) error {
+				b, _ := tx.CreateBucketIfNotExists([]byte("Posts"))
+				id, _ := b.NextSequence()
+				j, _ := json.Marshal(post)
+				log.Printf("json: %s", j)
+				err := b.Put([]byte(strconv.Itoa(int(id))), j)
+				if err != nil {
+					log.Printf("broke wrote to db %v", err)
+				}
+				return err
+			})
+
+			w.WriteHeader(200)
+			w.Write([]byte("asd")
+			return
+		}
+		//
+		//b, err := ioutil.ReadFile("assets/settings.html")
+		//
+		//if err != nil {
+		//	w.WriteHeader(500)
+		//	w.Write([]byte("Error reading file"))
+		//	log.Fatal(err)
+		//	return
+		//}
+		w.WriteHeader(200)
+		w.Write([]byte("b"))
+	}
+}
+
 func main() {
 	// override default serializer
 	nano.SetSerializer(json.NewSerializer())
-
+	db, err := bolt.Open("data.db", 0600, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
 	// rewrite component and handler name
 	room := NewRoomManager()
 	nano.Register(room,
@@ -160,6 +211,7 @@ func main() {
 	nano.SetWSPath("/nano")
 
 	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
+	http.HandleFunc("/settings", SettingsHandler(db))
 
 	nano.SetCheckOriginFunc(func(_ *http.Request) bool { return true })
 	nano.ListenWS(":3250", nano.WithPipeline(pipeline))
