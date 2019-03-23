@@ -180,17 +180,17 @@ func JsonHandler(s *json.Serializer, db *bolt.DB) func(w http.ResponseWriter, r 
 			jsonFile.Close()
 			fmt.Println("JSON data written to ", jsonFile.Name())
 
-			db.Update(func(tx *bolt.Tx) error {
-				b, _ := tx.CreateBucketIfNotExists([]byte("Jsons"))
-				//id, _ := b.NextSequence()
-				j, _ := jstwo.Marshal(&result)
-				log.Printf("json: %s", j)
-				err := b.Put([]byte(fileName), j)
-				if err != nil {
-					log.Printf("broke wrote to db %v", err)
-				}
-				return err
-			})
+			//db.Update(func(tx *bolt.Tx) error {
+			//	b, _ := tx.CreateBucketIfNotExists([]byte("Jsons"))
+			//	//id, _ := b.NextSequence()
+			//	j, _ := jstwo.Marshal(&result)
+			//	log.Printf("json: %s", j)
+			//	err := b.Put([]byte(fileName), j)
+			//	if err != nil {
+			//		log.Printf("broke wrote to db %v", err)
+			//	}
+			//	return err
+			//})
 
 			w.WriteHeader(200)
 			w.Write([]byte(""))
