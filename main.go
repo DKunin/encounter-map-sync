@@ -3,11 +3,14 @@ package main
 import (
 	"fmt"
 	"github.com/boltdb/bolt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	//"os"
 	"time"
 
+	jstwo "encoding/json"
 	"github.com/lonng/nano"
 	"github.com/lonng/nano/component"
 	"github.com/lonng/nano/serialize/json"
@@ -150,8 +153,9 @@ func (mgr *RoomManager) Message(s *session.Session, msg *UserMessage) error {
 	return room.group.Broadcast("onMessage", msg)
 }
 
-func SettingsHandler() func(w http.ResponseWriter, r *http.Request) {
+func JsonHandler(s *json.Serializer, db *bolt.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		fileName := r.URL.Query().Get("path")
 		if r.Method == "POST" {
 			err := r.ParseForm()
 			if err != nil {
@@ -160,56 +164,58 @@ func SettingsHandler() func(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			post := Data{
-				Info:  r.PostFormValue("data"),
-			}
-
-			jsonData, err := json.Marshal(post)
-			jsonFile, err := os.Create("./Person.json")
-
+			decoder := jstwo.NewDecoder(r.Body)
 			if err != nil {
 				panic(err)
 			}
-			defer jsonFile.Close()
 
+			var result map[string]interface{}
+
+			decoder.Decode(&result)
+
+			jsonFile, err := os.Create(fileName + ".json")
+			defer jsonFile.Close()
+			jsonData, _ := jstwo.Marshal(&result)
 			jsonFile.Write(jsonData)
 			jsonFile.Close()
 			fmt.Println("JSON data written to ", jsonFile.Name())
 
-			//Server.db.Update(func(tx *bolt.Tx) error {
-			//	b, _ := tx.CreateBucketIfNotExists([]byte("Posts"))
-			//	id, _ := b.NextSequence()
-			//	j, _ := json.Marshal(post)
-			//	log.Printf("json: %s", j)
-			//	err := b.Put([]byte(strconv.Itoa(int(id))), j)
-			//	if err != nil {
-			//		log.Printf("broke wrote to db %v", err)
-			//	}
-			//	return err
-			//})
+			db.Update(func(tx *bolt.Tx) error {
+				b, _ := tx.CreateBucketIfNotExists([]byte("Jsons"))
+				//id, _ := b.NextSequence()
+				j, _ := jstwo.Marshal(&result)
+				log.Printf("json: %s", j)
+				err := b.Put([]byte(fileName), j)
+				if err != nil {
+					log.Printf("broke wrote to db %v", err)
+				}
+				return err
+			})
 
 			w.WriteHeader(200)
-			w.Write([]byte("asd")
+			w.Write([]byte(""))
 			return
 		}
-		//
-		//b, err := ioutil.ReadFile("assets/settings.html")
-		//
-		//if err != nil {
-		//	w.WriteHeader(500)
-		//	w.Write([]byte("Error reading file"))
-		//	log.Fatal(err)
-		//	return
-		//}
+
+		jsonFile, _ := os.Open(fileName + ".json")
+		defer jsonFile.Close()
+		byteValue, err := ioutil.ReadAll(jsonFile)
+		if err != nil {
+			w.WriteHeader(200)
+			w.Write([]byte("{}"))
+			return
+		}
 		w.WriteHeader(200)
-		w.Write([]byte("b"))
+		w.Write([]byte(byteValue))
 	}
 }
 
 func main() {
 	// override default serializer
-	nano.SetSerializer(json.NewSerializer())
+	serializer := json.NewSerializer()
+	nano.SetSerializer(serializer)
 	db, err := bolt.Open("data.db", 0600, nil)
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -232,7 +238,7 @@ func main() {
 	nano.SetWSPath("/nano")
 
 	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
-	http.HandleFunc("/settings", SettingsHandler(db))
+	http.HandleFunc("/json", JsonHandler(serializer, db))
 
 	nano.SetCheckOriginFunc(func(_ *http.Request) bool { return true })
 	nano.ListenWS(":3250", nano.WithPipeline(pipeline))

@@ -1,4 +1,9 @@
 web/dnd-encounter-helper
 encounter-map-sync
 map
+data.db
+saveGeneratedLog.json
+savedEncounter.json
+savedEncounters.json
+savedParty.json
 .idea
