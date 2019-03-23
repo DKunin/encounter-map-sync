@@ -5,7 +5,7 @@ import (
 	"github.com/boltdb/bolt"
 	"log"
 	"net/http"
-	"strconv"
+	"os"
 	"time"
 
 	"github.com/lonng/nano"
@@ -136,6 +136,11 @@ func (mgr *RoomManager) Join(s *session.Session, msg []byte) error {
 	return s.Response(&JoinResponse{Result: "success"})
 }
 
+
+type Data struct {
+	Info string `json:"data"`
+}
+
 // Message sync last message to all members
 func (mgr *RoomManager) Message(s *session.Session, msg *UserMessage) error {
 	if !s.HasKey(roomIDKey) {
@@ -155,17 +160,33 @@ func SettingsHandler() func(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			Server.db.Update(func(tx *bolt.Tx) error {
-				b, _ := tx.CreateBucketIfNotExists([]byte("Posts"))
-				id, _ := b.NextSequence()
-				j, _ := json.Marshal(post)
-				log.Printf("json: %s", j)
-				err := b.Put([]byte(strconv.Itoa(int(id))), j)
-				if err != nil {
-					log.Printf("broke wrote to db %v", err)
-				}
-				return err
-			})
+			post := Data{
+				Info:  r.PostFormValue("data"),
+			}
+
+			jsonData, err := json.Marshal(post)
+			jsonFile, err := os.Create("./Person.json")
+
+			if err != nil {
+				panic(err)
+			}
+			defer jsonFile.Close()
+
+			jsonFile.Write(jsonData)
+			jsonFile.Close()
+			fmt.Println("JSON data written to ", jsonFile.Name())
+
+			//Server.db.Update(func(tx *bolt.Tx) error {
+			//	b, _ := tx.CreateBucketIfNotExists([]byte("Posts"))
+			//	id, _ := b.NextSequence()
+			//	j, _ := json.Marshal(post)
+			//	log.Printf("json: %s", j)
+			//	err := b.Put([]byte(strconv.Itoa(int(id))), j)
+			//	if err != nil {
+			//		log.Printf("broke wrote to db %v", err)
+			//	}
+			//	return err
+			//})
 
 			w.WriteHeader(200)
 			w.Write([]byte("asd")
