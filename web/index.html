@@ -108,7 +108,6 @@ layer.on('dragend', function(e) {
 
 var onMessage = function (msg) {
     layer.removeChildren();
-    console.log(msg)
     Object.keys(encounter.monsters).map(singleKey => {
         if (encounter.monsters[singleKey].id === msg.id) {
             encounter.monsters[singleKey].x = parseInt(msg.x);
@@ -153,8 +152,7 @@ var onNewUser = function (data) {
 //     v.messages.push({name:'system', content: "members: "+data.members});
 // };
 
-starx.init({host: 'localhost', port: 3250, path: '/nano'}, function () {
-    console.log("initialized");
+starx.init({host: document.location.host.split(':')[0], port: 3250, path: '/nano'}, function () {
     starx.on("onNewUser", onNewUser);
     // starx.on("onMembers", onMembers);
     starx.request("room.join", { type: 'party' }, join);
