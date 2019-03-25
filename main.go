@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	//"os"
 	"time"
 
 	jstwo "encoding/json"
@@ -68,9 +67,8 @@ type (
 	}
 
 	Server struct {
-		db    *bolt.DB
+		db *bolt.DB
 	}
-
 )
 
 func (stats *stats) outbound(s *session.Session, msg nano.Message) error {
@@ -139,7 +137,6 @@ func (mgr *RoomManager) Join(s *session.Session, msg []byte) error {
 	return s.Response(&JoinResponse{Result: "success"})
 }
 
-
 type Data struct {
 	Info string `json:"data"`
 }
@@ -179,18 +176,6 @@ func JsonHandler(s *json.Serializer, db *bolt.DB) func(w http.ResponseWriter, r 
 			jsonFile.Write(jsonData)
 			jsonFile.Close()
 			fmt.Println("JSON data written to ", jsonFile.Name())
-
-			//db.Update(func(tx *bolt.Tx) error {
-			//	b, _ := tx.CreateBucketIfNotExists([]byte("Jsons"))
-			//	//id, _ := b.NextSequence()
-			//	j, _ := jstwo.Marshal(&result)
-			//	log.Printf("json: %s", j)
-			//	err := b.Put([]byte(fileName), j)
-			//	if err != nil {
-			//		log.Printf("broke wrote to db %v", err)
-			//	}
-			//	return err
-			//})
 
 			w.WriteHeader(200)
 			w.Write([]byte(""))

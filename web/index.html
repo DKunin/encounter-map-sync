@@ -72,8 +72,22 @@ function createMonster(monster) {
     var shape = new Konva.Circle({
         width: size,
         height: size,
-        fill: monster.isPartyMember ? 'green': 'red',
+        stroke: 'black',
+        strokeWidth: 2,
+        fill: monster.isPartyMember ? '#27ae60' : '#e74c3c',
     });
+
+    var nameAvatar = new Konva.Text({
+        x: -4,
+        y: -4,
+        width: 15,
+        height: 15,
+        fill: 'white',
+        text: monster.name.split(' ').reduce((newLine, word) => {
+            return (newLine += word.slice(0, 1));
+        }, '')
+    });
+
     var boundingBox = shape.getClientRect({ relativeTo: group });
 
     group.id = monster.id;
@@ -84,13 +98,14 @@ function createMonster(monster) {
         x: boundingBox.x + 40,
         y: boundingBox.y,
 
-        stroke: 'white',
-        strokeWidth: 0.6,
+        stroke: 'black',
+        strokeWidth: 0.3,
         // color: 'white',
         strokeScaleEnabled: true,
         text: `${monster.name}\n`
     });
 
+    group.add(nameAvatar);
     group.add(mainText);
     
 
