@@ -1,7 +1,5 @@
-# starx-chat-demo
-chat room demo base on [nano](https://github.com/lonnng/nano) in 100 lines
-
-refs: https://github.com/lonnng/nano
+# DnD encounter map sync
+WebSocket enabled map
 
 ## Required
 - golang
